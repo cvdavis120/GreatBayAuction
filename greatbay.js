@@ -1,6 +1,6 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
-
+var allItems = []
 var connection = mysql.createConnection({
     host: "localhost",
 
@@ -11,7 +11,7 @@ var connection = mysql.createConnection({
     user: "root",
 
     // Your password
-    password: "saugatuck244!",
+    password: "",
     database: "auction_db"
 });
 
@@ -23,7 +23,8 @@ function startApp() {
         name: "userChoice"
     }]).then(function (res) {
         if (res.userChoice === "BID") {
-            selectAll()
+            // selectAll()
+            itemBid()
         } else if (res.userChoice === "POST") {
             postItem()
         } else {
@@ -46,7 +47,7 @@ function postItem() {
         message: "What is the opening bid on this item?",
         name: "itemOBid"
     }]).then(function (res) {
-        createItem(res.itemName, res.itemCat, res.ItemOBid)
+        createItem(res.itemName, res.itemCat, res.itemOBid)
     })
 }
 // DB CONNECTION 
@@ -67,13 +68,30 @@ function selectAll() {
 
 }
 
+function selectNames() {
+    connection.connect(function (err) {
+        if (err) throw err;
+        console.log("connected as id " + connection.threadId);
+        connection.query('SELECT item_name FROM items', function (err, res) {
+            if (err) throw err;
+
+
+            res.forEach(function (i) {
+                allItems.push(i)
+            })
+            console.log(allItems);
+        })
+
+        connection.end();
+    });
+
+}
+
 function createItem(name, cat, bid) {
     connection.connect(function (err) {
         if (err) throw err;
         console.log("connected as id " + connection.threadId);
         console.log("Inserting a new Item...\n");
-
-
         connection.query(
             "INSERT INTO items SET ?", {
                 item_name: name,
@@ -83,13 +101,23 @@ function createItem(name, cat, bid) {
             function (err, res) {
                 if (err) throw err;
                 console.log(res.affectedRows + " product inserted!\n");
-                // Call updateProduct AFTER the INSERT completes
-
             }
         );
-
         connection.end();
     });
+}
 
+function itemBid(itm) {
+    // Grab all items 
+    selectNames()
+    inquirer.prompt([{
+        type: "list",
+        message: "Which item would you like to bid on?",
+        choices: allItems,
+        name: "bidChoice"
+    }]).then(function (res) {
+        console.log(res.bidChoice);
+    })
+    // Bid on Item 
 }
 startApp()
